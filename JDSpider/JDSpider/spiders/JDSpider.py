@@ -50,30 +50,33 @@ class JDSpider(Spider):
 
     def parse_category(self, response):
         """获取分类页"""
-        # selector = Selector(response)
-        # try:
-        #     texts = selector.xpath('//div[@class="category-item m"]/div[@class="mc"]/div[@class="items"]/dl/dd/a').extract()
-        #     for text in texts:
-        #         items = re.findall(r'<a href="(.*?)" target="_blank">(.*?)</a>', text)
-        #         for item in items:
-        #             if item[0].split('.')[0][2:] in key_word:
-        #                 if item[0].split('.')[0][2:] != 'list':
-        #                     yield Request(url='https:' + item[0], callback=self.parse_category)
-        #                 else:
-        #                     categoriesItem = CategoriesItem()
-        #                     categoriesItem['name'] = item[1]
-        #                     categoriesItem['url'] = 'https:' + item[0]
-        #                     categoriesItem['_id'] = item[0].split('=')[1].split('&')[0]
-        #                     yield categoriesItem
-        #                     yield Request(url='https:' + item[0], callback=self.parse_list)
-        # except Exception as e:
-        #     print('error:', e)
+        selector = Selector(response)
+        try:
+            texts = selector.xpath(
+                '//div[@class="category-item m"]/div[@class="mc"]/div[@class="items"]/dl/dd/a').extract()
+            for text in texts:
+                items = re.findall(r'<a href="(.*?)" target="_blank">(.*?)</a>', text)
+                for item in items:
+                    if item[0].split('.')[0][2:] in key_word:
+                        if item[0].split('.')[0][2:] != 'list':
+                            yield Request(url='https:' + item[0], headers={"User-Agent": JDSpider.ua},
+                                          cookies=JDSpider.c, callback=self.parse_category)
+                        else:
+                            categoriesItem = CategoriesItem()
+                            categoriesItem['name'] = item[1]
+                            categoriesItem['url'] = 'https:' + item[0]
+                            categoriesItem['_id'] = item[0].split('=')[1].split('&')[0]
+                            yield categoriesItem
+                            yield Request(url='https:' + item[0], headers={"User-Agent": JDSpider.ua},
+                                          cookies=JDSpider.c, callback=self.parse_list)
+        except Exception as e:
+            print('error:', e)
 
         # 测试
-        yield Request(url='https://list.jd.com/list.html?cat=1315,1343,9720',
-                      headers={"User-Agent": JDSpider.ua},
-                      cookies=JDSpider.c,
-                      callback=self.parse_list)
+        # yield Request(url='https://list.jd.com/list.html?cat=1315,1343,9720',
+        #               headers={"User-Agent": JDSpider.ua},
+        #               cookies=JDSpider.c,
+        #               callback=self.parse_list)
 
     def parse_list(self, response):
         """分别获得商品的地址和下一页地址"""
@@ -88,11 +91,11 @@ class JDSpider(Spider):
                           cookies=JDSpider.c, callback=self.parse_product, meta=meta)
 
         # next page
-        # next_list = response.xpath('//a[@class="pn-next"]/@href').extract()
-        # if next_list:
-        #     # print('next page:', Base_url + next_list[0])
-        #     yield Request(url=Base_url + next_list[0], headers={"User-Agent": JDSpider.ua},
-        #                   cookies=JDSpider.c, callback=self.parse_list)
+        next_list = response.xpath('//a[@class="pn-next"]/@href').extract()
+        if next_list:
+            print('next page:', Base_url + next_list[0])
+            yield Request(url=Base_url + next_list[0], headers={"User-Agent": JDSpider.ua},
+                          cookies=JDSpider.c, callback=self.parse_list)
 
     def parse_product(self, response):
         """商品页获取title,price,product_id"""
